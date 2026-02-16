@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customize Wallpaper - Wallpaper Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-primary: #1a1a1a;
+            --color-secondary: #faf9f6;
+            --color-accent: #9caf88;
+            --color-warm: #d4a5a5;
+            --color-graphite: #2d2d2d;
+            --color-pearl: #f8f8f8;
+            --color-eucalyptus: #7a9471;
+            --color-blush: #e8c4c4;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+            --spacing-unit: 8px;
+            --border-radius: 12px;
+            --shadow-soft: 0 4px 24px rgba(0,0,0,0.1);
+            --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-primary);
+            color: var(--color-secondary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(156, 175, 136, 0.2);
+            padding: 16px 0;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            letter-spacing: -0.02em;
+            cursor: pointer;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--color-secondary);
+            text-decoration: none;
+            font-weight: 400;
+            font-size: 0.9rem;
+            transition: color 0.3s var(--transition-smooth);
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-accent);
+        }
+
+        .main-content {
+            padding: 100px 0 40px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 32px;
+            height: calc(100vh - 140px);
+        }
+
+        .canvas-area {
+            background: var(--color-graphite);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .wallpaper-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .canvas-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(26, 26, 26, 0.8);
+            border: none;
+            border-radius: 50%;
+            color: var(--color-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+            backdrop-filter: blur(10px);
+        }
+
+        .canvas-btn:hover {
+            background: var(--color-accent);
+            color: var(--color-primary);
+            transform: scale(1.1);
+        }
+
+        .controls-panel {
+            background: rgba(248, 248, 248, 0.02);
+            border-radius: var(--border-radius);
+            border: 1px solid rgba(156, 175, 136, 0.1);
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(156, 175, 136, 0.1);
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .panel-subtitle {
+            font-size: 0.9rem;
+            color: var(--color-graphite);
+        }
+
+        .control-group {
+            padding: 24px;
+            border-bottom: 1px solid rgba(156, 175, 136, 0.1);
+        }
+
+        .control-group:last-child {
+            border-bottom: none;
+        }
+
+        .control-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .control-value {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--color-accent);
+        }
+
+        .slider-container {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            background: rgba(156, 175, 136, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--color-accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 8px rgba(156, 175, 136, 0.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--color-accent);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .filter-item {
+            aspect-ratio: 1;
+            background: var(--color-graphite);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 2px solid transparent;
+        }
+
+        .filter-item:hover {
+            transform: scale(1.05);
+            border-color: var(--color-accent);
+        }
+
+        .filter-item.active {
+            border-color: var(--color-accent);
+            background: var(--color-accent);
+            color: var(--color-primary);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .color-option {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            border-color: var(--color-secondary);
+        }
+
+        .color-option.active {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(156, 175, 136, 0.3);
+        }
+
+        .aspect-ratio-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .aspect-option {
+            padding: 12px;
+            background: var(--color-graphite);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 2px solid transparent;
+        }
+
+        .aspect-option:hover {
+            background: var(--color-eucalyptus);
+        }
+
+        .aspect-option.active {
+            background: var(--color-accent);
+            color: var(--color-primary);
+            border-color: var(--color-accent);
+        }
+
+        .action-buttons {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: var(--color-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-eucalyptus);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(156, 175, 136, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--color-graphite);
+            color: var(--color-secondary);
+            border: 1px solid rgba(156, 175, 136, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-eucalyptus);
+            border-color: var(--color-eucalyptus);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--color-accent);
+            border: 2px solid var(--color-accent);
+        }
+
+        .btn-outline:hover {
+            background: var(--color-accent);
+            color: var(--color-primary);
+        }
+
+        .overlay-controls {
+            margin-top: 16px;
+        }
+
+        .overlay-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--color-graphite);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .overlay-item:hover {
+            background: var(--color-eucalyptus);
+        }
+
+        .overlay-item.active {
+            background: var(--color-accent);
+            color: var(--color-primary);
+        }
+
+        .overlay-preview {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: currentColor;
+            opacity: 0.6;
+        }
+
+        .text-controls {
+            display: none;
+            margin-top: 16px;
+        }
+
+        .text-controls.active {
+            display: block;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 12px;
+            background: var(--color-graphite);
+            border: 1px solid rgba(156, 175, 136, 0.3);
+            border-radius: 8px;
+            color: var(--color-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .font-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .font-option {
+            padding: 8px 12px;
+            background: var(--color-graphite);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s var(--transition-smooth);
+            text-align: center;
+            font-size: 0.8rem;
+            border: 2px solid transparent;
+        }
+
+        .font-option:hover {
+            background: var(--color-eucalyptus);
+        }
+
+        .font-option.active {
+            background: var(--color-accent);
+            color: var(--color-primary);
+            border-color: var(--color-accent);
+        }
+
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--color-accent);
+            border: none;
+            border-radius: 50%;
+            color: var(--color-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(156, 175, 136, 0.3);
+            z-index: 40;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .mobile-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 1024px) {
+            .workspace {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .controls-panel {
+                position: fixed;
+                top: 80px;
+                right: -100%;
+                width: 100%;
+                height: calc(100vh - 80px);
+                z-index: 30;
+                transition: right 0.3s var(--transition-smooth);
+            }
+            
+            .controls-panel.active {
+                right: 0;
+            }
+            
+            .mobile-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .canvas-area {
+                height: 60vh;
+                min-height: 400px;
+            }
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 26, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(156, 175, 136, 0.3);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 24px;
+            padding: 16px 24px;
+            background: var(--color-accent);
+            color: var(--color-primary);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            z-index: 60;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s var(--transition-smooth);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='index.html'">WALLPAPER STUDIO</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Gallery</a></li>
+                <li><a href="customize.html" class="active">Customize</a></li>
+                <li><a href="editor.html">Create</a></li>
+                <li><a href="index.html#collections">Collections</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="workspace">
+                <div class="canvas-area">
+                    <img id="wallpaperCanvas" class="wallpaper-canvas" src="resources/liquid-metal-abstract.png" alt="Wallpaper Preview">
+                    <div class="canvas-overlay">
+                        <button class="canvas-btn" id="fullscreenBtn" title="Fullscreen">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                            </svg>
+                        </button>
+                        <button class="canvas-btn" id="resetBtn" title="Reset">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="loading-overlay" id="loadingOverlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <div class="controls-panel" id="controlsPanel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Customize Wallpaper</h2>
+                        <p class="panel-subtitle">Adjust colors, apply filters, and add overlays</p>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Brightness</span>
+                            <span class="control-value" id="brightnessValue">100%</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="brightnessSlider" min="0" max="200" value="100">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Contrast</span>
+                            <span class="control-value" id="contrastValue">100%</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="contrastSlider" min="0" max="200" value="100">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Saturation</span>
+                            <span class="control-value" id="saturationValue">100%</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="saturationSlider" min="0" max="200" value="100">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Hue</span>
+                            <span class="control-value" id="hueValue">0°</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="hueSlider" min="-180" max="180" value="0">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Filters</span>
+                        </div>
+                        <div class="filter-grid">
+                            <div class="filter-item active" data-filter="none">Original</div>
+                            <div class="filter-item" data-filter="vintage">Vintage</div>
+                            <div class="filter-item" data-filter="sepia">Sepia</div>
+                            <div class="filter-item" data-filter="grayscale">B&W</div>
+                            <div class="filter-item" data-filter="invert">Invert</div>
+                            <div class="filter-item" data-filter="blur">Blur</div>
+                            <div class="filter-item" data-filter="sharpen">Sharpen</div>
+                            <div class="filter-item" data-filter="emboss">Emboss</div>
+                            <div class="filter-item" data-filter="neon">Neon</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Color Overlay</span>
+                        </div>
+                        <div class="color-picker">
+                            <div class="color-option active" data-color="none" style="background: transparent; border: 2px dashed var(--color-graphite);"></div>
+                            <div class="color-option" data-color="#9caf88" style="background: #9caf88;"></div>
+                            <div class="color-option" data-color="#d4a5a5" style="background: #d4a5a5;"></div>
+                            <div class="color-option" data-color="#7a9471" style="background: #7a9471;"></div>
+                            <div class="color-option" data-color="#2d2d2d" style="background: #2d2d2d;"></div>
+                            <div class="color-option" data-color="#faf9f6" style="background: #faf9f6;"></div>
+                            <div class="color-option" data-color="#e8c4c4" style="background: #e8c4c4;"></div>
+                            <div class="color-option" data-color="#1a1a1a" style="background: #1a1a1a;"></div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Aspect Ratio</span>
+                        </div>
+                        <div class="aspect-ratio-grid">
+                            <div class="aspect-option active" data-ratio="16:10">16:10</div>
+                            <div class="aspect-option" data-ratio="16:9">16:9</div>
+                            <div class="aspect-option" data-ratio="21:9">21:9</div>
+                            <div class="aspect-option" data-ratio="4:3">4:3</div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Pattern Overlays</span>
+                        </div>
+                        <div class="overlay-controls">
+                            <div class="overlay-item active" data-overlay="none">
+                                <span>None</span>
+                                <div class="overlay-preview" style="background: transparent;"></div>
+                            </div>
+                            <div class="overlay-item" data-overlay="dots">
+                                <span>Polka Dots</span>
+                                <div class="overlay-preview" style="background: radial-gradient(circle, currentColor 2px, transparent 2px); background-size: 20px 20px;"></div>
+                            </div>
+                            <div class="overlay-item" data-overlay="stripes">
+                                <span>Stripes</span>
+                                <div class="overlay-preview" style="background: repeating-linear-gradient(45deg, currentColor, currentColor 2px, transparent 2px, transparent 10px);"></div>
+                            </div>
+                            <div class="overlay-item" data-overlay="grid">
+                                <span>Grid</span>
+                                <div class="overlay-preview" style="background: linear-gradient(90deg, currentColor 1px, transparent 1px), linear-gradient(currentColor 1px, transparent 1px); background-size: 10px 10px;"></div>
+                            </div>
+                            <div class="overlay-item" data-overlay="hexagon">
+                                <span>Hexagons</span>
+                                <div class="overlay-preview" style="background: radial-gradient(circle at 50% 50%, transparent 20%, currentColor 21%, currentColor 34%, transparent 35%, transparent), linear-gradient(0deg, transparent 24%, currentColor 25%, currentColor 26%, transparent 27%, transparent 74%, currentColor 75%, currentColor 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, currentColor 25%, currentColor 26%, transparent 27%, transparent 74%, currentColor 75%, currentColor 76%, transparent 77%, transparent); background-size: 30px 30px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Add Text</span>
+                            <button class="text-sm text-green-400 hover:text-green-300" id="toggleTextBtn">+ Add</button>
+                        </div>
+                        <div class="text-controls" id="textControls">
+                            <input type="text" class="text-input" id="textInput" placeholder="Enter your text...">
+                            <div class="font-selector">
+                                <div class="font-option active" data-font="Inter">Inter</div>
+                                <div class="font-option" data-font="Space Mono">Mono</div>
+                                <div class="font-option" data-font="serif">Serif</div>
+                                <div class="font-option" data-font="cursive">Cursive</div>
+                            </div>
+                            <div class="slider-container">
+                                <input type="range" class="slider" id="textSizeSlider" min="12" max="72" value="24">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="applyBtn">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Apply Changes
+                        </button>
+                        <button class="btn btn-secondary" id="savePresetBtn">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                            </svg>
+                            Save Preset
+                        </button>
+                        <button class="btn btn-outline" id="downloadBtn">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <button class="mobile-toggle" id="mobileToggle">
+        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+        </svg>
+    </button>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        class WallpaperCustomizer {
+            constructor() {
+                this.canvas = document.getElementById('wallpaperCanvas');
+                this.originalImage = null;
+                this.currentSettings = {
+                    brightness: 100,
+                    contrast: 100,
+                    saturation: 100,
+                    hue: 0,
+                    filter: 'none',
+                    overlayColor: 'none',
+                    overlayPattern: 'none',
+                    aspectRatio: '16:10',
+                    text: '',
+                    textFont: 'Inter',
+                    textSize: 24
+                };
+                this.init();
+            }
+
+            init() {
+                this.loadWallpaper();
+                this.setupEventListeners();
+                this.initializeControls();
+            }
+
+            loadWallpaper() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const wallpaperId = urlParams.get('id');
+                
+                if (wallpaperId) {
+                    // Load from main app data
+                    const wallpapers = [
+                        { id: 'liquid-metal-abstract', source: 'resources/liquid-metal-abstract.png' },
+                        { id: 'biophilic-eucalyptus', source: 'resources/biophilic-eucalyptus.png' },
+                        { id: 'dark-forest-aurora', source: 'resources/dark-forest-aurora.png' },
+                        { id: 'geometric-triangles', source: 'resources/geometric-triangles.png' },
+                        { id: 'mountain-landscape', source: 'resources/mountain-landscape.png' },
+                        { id: 'ocean-waves-abstract', source: 'resources/ocean-waves-abstract.png' }
+                    ];
+                    
+                    const wallpaper = wallpapers.find(w => w.id === wallpaperId);
+                    if (wallpaper) {
+                        this.canvas.src = wallpaper.source;
+                    }
+                }
+                
+                this.canvas.onload = () => {
+                    this.originalImage = this.canvas.src;
+                    this.applySettings();
+                };
+            }
+
+            setupEventListeners() {
+                // Sliders
+                const sliders = ['brightness', 'contrast', 'saturation', 'hue'];
+                sliders.forEach(type => {
+                    const slider = document.getElementById(`${type}Slider`);
+                    const valueDisplay = document.getElementById(`${type}Value`);
+                    
+                    slider.addEventListener('input', (e) => {
+                        const value = e.target.value;
+                        this.currentSettings[type] = parseInt(value);
+                        valueDisplay.textContent = type === 'hue' ? `${value}°` : `${value}%`;
+                        this.applySettings();
+                    });
+                });
+
+                // Filter buttons
+                document.querySelectorAll('.filter-item').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentSettings.filter = e.target.dataset.filter;
+                        this.applySettings();
+                    });
+                });
+
+                // Color overlay
+                document.querySelectorAll('.color-option').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentSettings.overlayColor = e.target.dataset.color;
+                        this.applySettings();
+                    });
+                });
+
+                // Pattern overlays
+                document.querySelectorAll('.overlay-item').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.overlay-item').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentSettings.overlayPattern = e.currentTarget.dataset.overlay;
+                        this.applySettings();
+                    });
+                });
+
+                // Aspect ratio
+                document.querySelectorAll('.aspect-option').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.aspect-option').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentSettings.aspectRatio = e.target.dataset.ratio;
+                        this.applyAspectRatio();
+                    });
+                });
+
+                // Text controls
+                document.getElementById('toggleTextBtn').addEventListener('click', () => {
+                    const textControls = document.getElementById('textControls');
+                    textControls.classList.toggle('active');
+                });
+
+                document.getElementById('textInput').addEventListener('input', (e) => {
+                    this.currentSettings.text = e.target.value;
+                    this.applySettings();
+                });
+
+                document.querySelectorAll('.font-option').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.font-option').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentSettings.textFont = e.target.dataset.font;
+                        this.applySettings();
+                    });
+                });
+
+                document.getElementById('textSizeSlider').addEventListener('input', (e) => {
+                    this.currentSettings.textSize = parseInt(e.target.value);
+                    this.applySettings();
+                });
+
+                // Action buttons
+                document.getElementById('applyBtn').addEventListener('click', () => {
+                    this.showNotification('Settings applied successfully!');
+                });
+
+                document.getElementById('savePresetBtn').addEventListener('click', () => {
+                    this.savePreset();
+                });
+
+                document.getElementById('downloadBtn').addEventListener('click', () => {
+                    this.downloadWallpaper();
+                });
+
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.resetSettings();
+                });
+
+                document.getElementById('fullscreenBtn').addEventListener('click', () => {
+                    this.toggleFullscreen();
+                });
+
+                // Mobile toggle
+                document.getElementById('mobileToggle').addEventListener('click', () => {
+                    document.getElementById('controlsPanel').classList.toggle('active');
+                });
+            }
+
+            initializeControls() {
+                // Set initial values
+                this.applySettings();
+                this.applyAspectRatio();
+            }
+
+            applySettings() {
+                const filters = [];
+                
+                // Basic adjustments
+                filters.push(`brightness(${this.currentSettings.brightness}%)`);
+                filters.push(`contrast(${this.currentSettings.contrast}%)`);
+                filters.push(`saturate(${this.currentSettings.saturation}%)`);
+                filters.push(`hue-rotate(${this.currentSettings.hue}deg)`);
+                
+                // Special filters
+                switch (this.currentSettings.filter) {
+                    case 'vintage':
+                        filters.push('sepia(0.5) contrast(1.2) brightness(0.9)');
+                        break;
+                    case 'sepia':
+                        filters.push('sepia(1)');
+                        break;
+                    case 'grayscale':
+                        filters.push('grayscale(1)');
+                        break;
+                    case 'invert':
+                        filters.push('invert(1)');
+                        break;
+                    case 'blur':
+                        filters.push('blur(2px)');
+                        break;
+                    case 'sharpen':
+                        filters.push('contrast(1.2) brightness(1.1)');
+                        break;
+                    case 'emboss':
+                        filters.push('contrast(1.5) brightness(1.2)');
+                        break;
+                    case 'neon':
+                        filters.push('brightness(1.5) contrast(1.2) saturate(2)');
+                        break;
+                }
+
+                this.canvas.style.filter = filters.join(' ');
+                
+                // Apply color overlay
+                if (this.currentSettings.overlayColor !== 'none') {
+                    this.canvas.style.backgroundColor = this.currentSettings.overlayColor;
+                    this.canvas.style.backgroundBlendMode = 'multiply';
+                } else {
+                    this.canvas.style.backgroundColor = 'transparent';
+                }
+            }
+
+            applyAspectRatio() {
+                const [width, height] = this.currentSettings.aspectRatio.split(':');
+                const ratio = parseInt(width) / parseInt(height);
+                
+                if (window.innerWidth > 1024) {
+                    this.canvas.style.aspectRatio = `${width}/${height}`;
+                }
+            }
+
+            resetSettings() {
+                this.currentSettings = {
+                    brightness: 100,
+                    contrast: 100,
+                    saturation: 100,
+                    hue: 0,
+                    filter: 'none',
+                    overlayColor: 'none',
+                    overlayPattern: 'none',
+                    aspectRatio: '16:10',
+                    text: '',
+                    textFont: 'Inter',
+                    textSize: 24
+                };
+
+                // Reset UI
+                document.getElementById('brightnessSlider').value = 100;
+                document.getElementById('contrastSlider').value = 100;
+                document.getElementById('saturationSlider').value = 100;
+                document.getElementById('hueSlider').value = 0;
+                document.getElementById('textInput').value = '';
+
+                document.getElementById('brightnessValue').textContent = '100%';
+                document.getElementById('contrastValue').textContent = '100%';
+                document.getElementById('saturationValue').textContent = '100%';
+                document.getElementById('hueValue').textContent = '0°';
+
+                // Reset active states
+                document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
+                document.querySelector('.filter-item[data-filter="none"]').classList.add('active');
+                document.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
+                document.querySelector('.color-option[data-color="none"]').classList.add('active');
+                document.querySelectorAll('.overlay-item').forEach(b => b.classList.remove('active'));
+                document.querySelector('.overlay-item[data-overlay="none"]').classList.add('active');
+
+                this.applySettings();
+                this.showNotification('Settings reset to default');
+            }
+
+            savePreset() {
+                const presetName = prompt('Enter preset name:');
+                if (presetName) {
+                    localStorage.setItem(`wallpaper_preset_${presetName}`, JSON.stringify(this.currentSettings));
+                    this.showNotification(`Preset "${presetName}" saved successfully!`);
+                }
+            }
+
+            downloadWallpaper() {
+                // Create a temporary canvas to apply all effects
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    tempCanvas.width = img.width;
+                    tempCanvas.height = img.height;
+                    
+                    // Apply filters and draw image
+                    ctx.filter = this.canvas.style.filter;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Download the image
+                    const link = document.createElement('a');
+                    link.download = `customized_wallpaper_${Date.now()}.png`;
+                    link.href = tempCanvas.toDataURL();
+                    link.click();
+                    
+                    this.showNotification('Wallpaper downloaded successfully!');
+                };
+                
+                img.src = this.canvas.src;
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    this.canvas.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+
+            showNotification(message) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new WallpaperCustomizer();
+        });
+    </script>
+</body>
+</html>

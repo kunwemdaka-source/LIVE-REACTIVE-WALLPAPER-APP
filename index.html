@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Reactive Wallpaper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-deep-space: #0a0a0a;
+            --color-quantum-blue: #1e3a8a;
+            --color-neural-green: #059669;
+            --color-data-orange: #ea580c;
+            --color-matrix-teal: #0f766e;
+            --color-plasma-purple: #7c3aed;
+            --color-signal-yellow: #eab308;
+            --color-void-gray: #1f2937;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Inter', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-deep-space);
+            color: white;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        .wallpaper-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .status-bar {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            pointer-events: auto;
+            border: 1px solid rgba(30, 58, 138, 0.3);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.cpu { background: var(--color-quantum-blue); }
+        .status-indicator.memory { background: var(--color-neural-green); }
+        .status-indicator.network { background: var(--color-data-orange); }
+        .status-indicator.fps { background: var(--color-matrix-teal); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .control-panel {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            pointer-events: auto;
+            border: 1px solid rgba(30, 58, 138, 0.3);
+            min-width: 200px;
+        }
+
+        .control-section {
+            margin-bottom: 16px;
+        }
+
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-title {
+            font-family: var(--font-display);
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--color-quantum-blue);
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .control-slider {
+            width: 60px;
+            height: 4px;
+            background: rgba(30, 58, 138, 0.3);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .control-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--color-quantum-blue);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .control-toggle {
+            width: 32px;
+            height: 16px;
+            background: rgba(30, 58, 138, 0.3);
+            border-radius: 8px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .control-toggle.active {
+            background: var(--color-quantum-blue);
+        }
+
+        .control-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .control-toggle.active::after {
+            transform: translateX(16px);
+        }
+
+        .theme-selector {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 16px;
+            pointer-events: auto;
+            border: 1px solid rgba(30, 58, 138, 0.3);
+            display: flex;
+            gap: 12px;
+        }
+
+        .theme-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--color-quantum-blue);
+        }
+
+        .theme-btn.active {
+            border-color: var(--color-neural-green);
+            box-shadow: 0 0 20px rgba(5, 150, 105, 0.5);
+        }
+
+        .theme-particles {
+            background: linear-gradient(45deg, var(--color-quantum-blue), var(--color-matrix-teal));
+        }
+
+        .theme-waves {
+            background: linear-gradient(45deg, var(--color-neural-green), var(--color-data-orange));
+        }
+
+        .theme-network {
+            background: linear-gradient(45deg, var(--color-plasma-purple), var(--color-signal-yellow));
+        }
+
+        .theme-matrix {
+            background: linear-gradient(45deg, var(--color-deep-space), var(--color-void-gray));
+        }
+
+        .notification {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            background: rgba(31, 41, 55, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            border: 1px solid var(--color-neural-green);
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .cursor-trail {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--color-quantum-blue), transparent);
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .keyboard-indicator {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(5, 150, 105, 0.2);
+            border: 2px solid var(--color-neural-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .keyboard-indicator.active {
+            opacity: 1;
+        }
+
+        .system-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(234, 88, 12, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 20;
+        }
+
+        .system-alert.show {
+            opacity: 1;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--color-deep-space);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--color-quantum-blue);
+            animation: pulse 1.5s infinite;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                top: auto;
+                bottom: 100px;
+                left: 24px;
+                right: 24px;
+                min-width: auto;
+            }
+            
+            .status-bar {
+                top: 24px;
+                left: 24px;
+                right: 24px;
+            }
+            
+            .theme-selector {
+                bottom: 24px;
+                left: 24px;
+                right: 24px;
+                transform: none;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-text">Initializing Reactive Wallpaper...</div>
+    </div>
+
+    <div class="wallpaper-canvas" id="wallpaperCanvas"></div>
+    
+    <div class="cursor-trail" id="cursorTrail"></div>
+    
+    <div class="keyboard-indicator" id="keyboardIndicator">
+        KEY
+    </div>
+
+    <div class="ui-overlay">
+        <div class="control-panel">
+            <div class="control-section">
+                <div class="control-title">Reactivity</div>
+                <div class="control-item">
+                    <span>Mouse Sensitivity</span>
+                    <input type="range" class="control-slider" id="mouseSensitivity" min="0" max="100" value="75">
+                </div>
+                <div class="control-item">
+                    <span>Keyboard Response</span>
+                    <input type="range" class="control-slider" id="keyboardResponse" min="0" max="100" value="60">
+                </div>
+                <div class="control-item">
+                    <span>System Integration</span>
+                    <div class="control-toggle active" id="systemToggle"></div>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <div class="control-title">Performance</div>
+                <div class="control-item">
+                    <span>Particle Density</span>
+                    <input type="range" class="control-slider" id="particleDensity" min="10" max="200" value="100">
+                </div>
+                <div class="control-item">
+                    <span>Animation Speed</span>
+                    <input type="range" class="control-slider" id="animationSpeed" min="10" max="200" value="100">
+                </div>
+                <div class="control-item">
+                    <span>Quality Mode</span>
+                    <div class="control-toggle active" id="qualityToggle"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator cpu"></div>
+                <span>CPU: <span id="cpuUsage">45</span>%</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator memory"></div>
+                <span>RAM: <span id="memoryUsage">62</span>%</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator network"></div>
+                <span>NET: <span id="networkActivity">12</span>KB/s</span>
+            </div>
+            <div class="status-item">
+                <div class="status-indicator fps"></div>
+                <span>FPS: <span id="fpsCounter">60</span></span>
+            </div>
+        </div>
+
+        <div class="theme-selector">
+            <div class="theme-btn theme-particles active" data-theme="particles" title="Particle Flow"></div>
+            <div class="theme-btn theme-waves" data-theme="waves" title="Liquid Waves"></div>
+            <div class="theme-btn theme-network" data-theme="network" title="Neural Network"></div>
+            <div class="theme-btn theme-matrix" data-theme="matrix" title="Digital Matrix"></div>
+        </div>
+
+        <div class="notification" id="notification">
+            Reactive wallpaper initialized
+        </div>
+
+        <div class="system-alert" id="systemAlert">
+            System performance optimized
+        </div>
+    </div>
+
+    <script>
+        class ReactiveWallpaper {
+            constructor() {
+                this.canvas = null;
+                this.particles = [];
+                this.currentTheme = 'particles';
+                this.settings = {
+                    mouseSensitivity: 75,
+                    keyboardResponse: 60,
+                    particleDensity: 100,
+                    animationSpeed: 100,
+                    systemIntegration: true,
+                    qualityMode: true
+                };
+                this.mouse = { x: 0, y: 0, vx: 0, vy: 0 };
+                this.keys = new Set();
+                this.systemStats = {
+                    cpu: 45,
+                    memory: 62,
+                    network: 12,
+                    fps: 60
+                };
+                this.time = 0;
+                this.init();
+            }
+
+            init() {
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.initializeParticles();
+                this.startAnimation();
+                this.simulateSystemStats();
+                this.hideLoadingScreen();
+            }
+
+            setupCanvas() {
+                if (typeof p5 !== 'undefined') {
+                    new p5((p) => {
+                        this.p5Instance = p;
+                        
+                        p.setup = () => {
+                            const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                            canvas.parent('wallpaperCanvas');
+                            this.canvas = canvas;
+                            p.colorMode(p.HSB, 360, 100, 100, 100);
+                            p.background(0, 0, 0);
+                        };
+
+                        p.draw = () => {
+                            this.update();
+                            this.render();
+                        };
+
+                        p.windowResized = () => {
+                            p.resizeCanvas(p.windowWidth, p.windowHeight);
+                            this.initializeParticles();
+                        };
+                    });
+                }
+            }
+
+            setupEventListeners() {
+                // Mouse tracking
+                document.addEventListener('mousemove', (e) => {
+                    const rect = this.canvas?.elt.getBoundingClientRect();
+                    if (rect) {
+                        this.mouse.vx = (e.clientX - rect.left - this.mouse.x) * 0.1;
+                        this.mouse.vy = (e.clientY - rect.top - this.mouse.y) * 0.1;
+                        this.mouse.x = e.clientX - rect.left;
+                        this.mouse.y = e.clientY - rect.top;
+                    }
+                });
+
+                // Click effects
+                document.addEventListener('click', (e) => {
+                    this.createClickRipple(e.clientX, e.clientY);
+                });
+
+                // Keyboard tracking
+                document.addEventListener('keydown', (e) => {
+                    this.keys.add(e.code);
+                    this.createKeyPress(e.code);
+                });
+
+                document.addEventListener('keyup', (e) => {
+                    this.keys.delete(e.code);
+                });
+
+                // Control panel interactions
+                document.getElementById('mouseSensitivity').addEventListener('input', (e) => {
+                    this.settings.mouseSensitivity = parseInt(e.target.value);
+                });
+
+                document.getElementById('keyboardResponse').addEventListener('input', (e) => {
+                    this.settings.keyboardResponse = parseInt(e.target.value);
+                });
+
+                document.getElementById('particleDensity').addEventListener('input', (e) => {
+                    this.settings.particleDensity = parseInt(e.target.value);
+                    this.adjustParticleCount();
+                });
+
+                document.getElementById('animationSpeed').addEventListener('input', (e) => {
+                    this.settings.animationSpeed = parseInt(e.target.value);
+                });
+
+                document.getElementById('systemToggle').addEventListener('click', (e) => {
+                    this.settings.systemIntegration = !this.settings.systemIntegration;
+                    e.target.classList.toggle('active');
+                });
+
+                document.getElementById('qualityToggle').addEventListener('click', (e) => {
+                    this.settings.qualityMode = !this.settings.qualityMode;
+                    e.target.classList.toggle('active');
+                    this.adjustQuality();
+                });
+
+                // Theme selection
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.switchTheme(e.target.dataset.theme);
+                    });
+                });
+
+                // Keyboard indicator
+                document.addEventListener('keydown', () => {
+                    document.getElementById('keyboardIndicator').classList.add('active');
+                });
+
+                document.addEventListener('keyup', () => {
+                    if (this.keys.size === 0) {
+                        document.getElementById('keyboardIndicator').classList.remove('active');
+                    }
+                });
+            }
+
+            initializeParticles() {
+                this.particles = [];
+                const count = Math.floor(this.settings.particleDensity * (this.canvas?.width || 1920) / 1920);
+                
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: Math.random() * (this.canvas?.width || 1920),
+                        y: Math.random() * (this.canvas?.height || 1080),
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        size: Math.random() * 4 + 1,
+                        hue: Math.random() * 60 + 200,
+                        life: 1,
+                        maxLife: 1,
+                        type: Math.random() < 0.7 ? 'normal' : 'reactive'
+                    });
+                }
+            }
+
+            adjustParticleCount() {
+                const targetCount = Math.floor(this.settings.particleDensity * (this.canvas?.width || 1920) / 1920);
+                
+                if (this.particles.length < targetCount) {
+                    // Add particles
+                    while (this.particles.length < targetCount) {
+                        this.particles.push({
+                            x: Math.random() * (this.canvas?.width || 1920),
+                            y: Math.random() * (this.canvas?.height || 1080),
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            size: Math.random() * 4 + 1,
+                            hue: Math.random() * 60 + 200,
+                            life: 1,
+                            maxLife: 1,
+                            type: Math.random() < 0.7 ? 'normal' : 'reactive'
+                        });
+                    }
+                } else if (this.particles.length > targetCount) {
+                    // Remove particles
+                    this.particles.splice(targetCount);
+                }
+            }
+
+            createClickRipple(x, y) {
+                const rect = this.canvas?.elt.getBoundingClientRect();
+                if (rect) {
+                    const rippleX = x - rect.left;
+                    const rippleY = y - rect.top;
+                    
+                    // Create temporary ripple particles
+                    for (let i = 0; i < 20; i++) {
+                        const angle = (Math.PI * 2 * i) / 20;
+                        const speed = Math.random() * 3 + 2;
+                        this.particles.push({
+                            x: rippleX,
+                            y: rippleY,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            size: Math.random() * 3 + 1,
+                            hue: 180 + Math.random() * 60,
+                            life: 0.8,
+                            maxLife: 0.8,
+                            type: 'ripple'
+                        });
+                    }
+                }
+            }
+
+            createKeyPress(keyCode) {
+                // Create key press particles
+                const x = Math.random() * (this.canvas?.width || 1920);
+                const y = Math.random() * (this.canvas?.height || 1080);
+                
+                for (let i = 0; i < 5; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: (Math.random() - 0.5) * 4,
+                        size: Math.random() * 2 + 1,
+                        hue: Math.random() < 0.5 ? 120 : 60,
+                        life: 1,
+                        maxLife: 1,
+                        type: 'keypress'
+                    });
+                }
+            }
+
+            switchTheme(theme) {
+                this.currentTheme = theme;
+                this.showNotification(`Switched to ${theme} theme`);
+                
+                // Animate theme transition
+                anime({
+                    targets: this.particles,
+                    duration: 1000,
+                    easing: 'easeInOutQuad',
+                    update: () => {
+                        // Update particle colors based on theme
+                        this.particles.forEach(particle => {
+                            if (this.currentTheme === 'particles') {
+                                particle.hue = Math.random() * 60 + 200;
+                            } else if (this.currentTheme === 'waves') {
+                                particle.hue = Math.random() * 60 + 120;
+                            } else if (this.currentTheme === 'network') {
+                                particle.hue = Math.random() * 60 + 280;
+                            } else if (this.currentTheme === 'matrix') {
+                                particle.hue = 120;
+                            }
+                        });
+                    }
+                });
+            }
+
+            update() {
+                if (!this.p5Instance) return;
+                
+                this.time += 0.016 * (this.settings.animationSpeed / 100);
+                
+                // Update particles
+                this.particles.forEach((particle, index) => {
+                    // Mouse attraction for reactive particles
+                    if (particle.type === 'reactive' || particle.type === 'normal') {
+                        const dx = this.mouse.x - particle.x;
+                        const dy = this.mouse.y - particle.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 200 && this.settings.mouseSensitivity > 0) {
+                            const force = (200 - distance) / 200 * (this.settings.mouseSensitivity / 100) * 0.05;
+                            particle.vx += (dx / distance) * force;
+                            particle.vy += (dy / distance) * force;
+                        }
+                    }
+                    
+                    // Keyboard influence
+                    if (this.keys.size > 0 && this.settings.keyboardResponse > 0) {
+                        const keyInfluence = this.keys.size * (this.settings.keyboardResponse / 100) * 0.01;
+                        particle.vx += (Math.random() - 0.5) * keyInfluence;
+                        particle.vy += (Math.random() - 0.5) * keyInfluence;
+                    }
+                    
+                    // Update position
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    // Apply damping
+                    particle.vx *= 0.98;
+                    particle.vy *= 0.98;
+                    
+                    // Wrap around edges
+                    if (particle.x < 0) particle.x = this.canvas.width;
+                    if (particle.x > this.canvas.width) particle.x = 0;
+                    if (particle.y < 0) particle.y = this.canvas.height;
+                    if (particle.y > this.canvas.height) particle.y = 0;
+                    
+                    // Update life for temporary particles
+                    if (particle.type === 'ripple' || particle.type === 'keypress') {
+                        particle.life -= 0.02;
+                        if (particle.life <= 0) {
+                            this.particles.splice(index, 1);
+                        }
+                    }
+                    
+                    // Theme-specific updates
+                    if (this.currentTheme === 'waves') {
+                        particle.y += Math.sin(this.time + particle.x * 0.01) * 0.5;
+                    } else if (this.currentTheme === 'network') {
+                        particle.x += Math.sin(this.time + particle.y * 0.01) * 0.3;
+                    } else if (this.currentTheme === 'matrix') {
+                        particle.y += 2;
+                        if (particle.y > this.canvas.height) {
+                            particle.y = -10;
+                            particle.x = Math.random() * this.canvas.width;
+                        }
+                    }
+                });
+                
+                // Update cursor trail
+                const trail = document.getElementById('cursorTrail');
+                trail.style.left = (this.mouse.x - 10) + 'px';
+                trail.style.top = (this.mouse.y - 10) + 'px';
+            }
+
+            render() {
+                if (!this.p5Instance) return;
+                
+                const p = this.p5Instance;
+                
+                // Clear with slight trail effect
+                p.fill(0, 0, 0, 20);
+                p.rect(0, 0, p.width, p.height);
+                
+                // Render particles based on theme
+                this.particles.forEach(particle => {
+                    p.push();
+                    
+                    // Apply theme-specific rendering
+                    if (this.currentTheme === 'particles') {
+                        p.fill(particle.hue, 60, 80, particle.life * 100);
+                        p.noStroke();
+                        p.ellipse(particle.x, particle.y, particle.size);
+                    } else if (this.currentTheme === 'waves') {
+                        p.fill(particle.hue, 40, 70, particle.life * 80);
+                        p.noStroke();
+                        p.ellipse(particle.x, particle.y, particle.size * 1.5);
+                    } else if (this.currentTheme === 'network') {
+                        p.stroke(particle.hue, 80, 90, particle.life * 60);
+                        p.strokeWeight(1);
+                        p.line(particle.x, particle.y, 
+                               particle.x + particle.vx * 10, 
+                               particle.y + particle.vy * 10);
+                        
+                        p.fill(particle.hue, 60, 80, particle.life * 100);
+                        p.noStroke();
+                        p.ellipse(particle.x, particle.y, particle.size * 0.5);
+                    } else if (this.currentTheme === 'matrix') {
+                        p.fill(120, 100, 80, particle.life * 100);
+                        p.noStroke();
+                        p.textSize(particle.size * 2);
+                        p.textAlign(p.CENTER, p.CENTER);
+                        p.text(Math.random() < 0.5 ? '1' : '0', particle.x, particle.y);
+                    }
+                    
+                    p.pop();
+                });
+                
+                // Draw connections for network theme
+                if (this.currentTheme === 'network') {
+                    for (let i = 0; i < this.particles.length; i++) {
+                        for (let j = i + 1; j < this.particles.length; j++) {
+                            const p1 = this.particles[i];
+                            const p2 = this.particles[j];
+                            const distance = Math.sqrt(
+                                (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
+                            );
+                            
+                            if (distance < 100) {
+                                p.stroke(280, 60, 70, (100 - distance) * 0.5);
+                                p.strokeWeight(0.5);
+                                p.line(p1.x, p1.y, p2.x, p2.y);
+                            }
+                        }
+                    }
+                }
+            }
+
+            startAnimation() {
+                if (this.p5Instance) {
+                    this.p5Instance.loop();
+                }
+            }
+
+            simulateSystemStats() {
+                setInterval(() => {
+                    // Simulate realistic system stats
+                    this.systemStats.cpu = Math.max(10, Math.min(95, 
+                        this.systemStats.cpu + (Math.random() - 0.5) * 10
+                    ));
+                    
+                    this.systemStats.memory = Math.max(20, Math.min(90, 
+                        this.systemStats.memory + (Math.random() - 0.5) * 5
+                    ));
+                    
+                    this.systemStats.network = Math.max(0, Math.min(100, 
+                        this.systemStats.network + (Math.random() - 0.5) * 20
+                    ));
+                    
+                    this.systemStats.fps = Math.max(30, Math.min(60, 
+                        this.systemStats.fps + (Math.random() - 0.5) * 5
+                    ));
+                    
+                    // Update UI
+                    document.getElementById('cpuUsage').textContent = Math.round(this.systemStats.cpu);
+                    document.getElementById('memoryUsage').textContent = Math.round(this.systemStats.memory);
+                    document.getElementById('networkActivity').textContent = Math.round(this.systemStats.network);
+                    document.getElementById('fpsCounter').textContent = Math.round(this.systemStats.fps);
+                }, 2000);
+            }
+
+            adjustQuality() {
+                if (this.settings.qualityMode) {
+                    this.settings.particleDensity = Math.min(200, this.settings.particleDensity * 1.5);
+                } else {
+                    this.settings.particleDensity = Math.max(10, this.settings.particleDensity * 0.7);
+                }
+                this.adjustParticleCount();
+            }
+
+            showNotification(message) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+
+            hideLoadingScreen() {
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    this.showNotification('Reactive wallpaper ready');
+                }, 2000);
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.reactiveWallpaper = new ReactiveWallpaper();
+        });
+
+        // Prevent context menu on right click
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (window.reactiveWallpaper && window.reactiveWallpaper.p5Instance) {
+                if (document.hidden) {
+                    window.reactiveWallpaper.p5Instance.noLoop();
+                } else {
+                    window.reactiveWallpaper.p5Instance.loop();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

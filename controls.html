@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reactive Wallpaper Controls</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-deep-space: #0a0a0a;
+            --color-quantum-blue: #1e3a8a;
+            --color-neural-green: #059669;
+            --color-data-orange: #ea580c;
+            --color-matrix-teal: #0f766e;
+            --color-plasma-purple: #7c3aed;
+            --color-signal-yellow: #eab308;
+            --color-void-gray: #1f2937;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Inter', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-deep-space);
+            color: white;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(30, 58, 138, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(5, 150, 105, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+        }
+
+        .header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(30, 58, 138, 0.2);
+            background: rgba(31, 41, 55, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-quantum-blue);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-quantum-blue);
+        }
+
+        .nav-links a.active {
+            color: var(--color-neural-green);
+        }
+
+        .main-content {
+            padding: 32px 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .control-panel {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(30, 58, 138, 0.2);
+            padding: 24px;
+        }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--color-quantum-blue);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--color-quantum-blue);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .control-value {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--color-neural-green);
+        }
+
+        .slider-container {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            background: rgba(30, 58, 138, 0.2);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--color-quantum-blue);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 8px rgba(30, 58, 138, 0.2);
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .toggle {
+            width: 48px;
+            height: 24px;
+            background: rgba(30, 58, 138, 0.2);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle.active {
+            background: var(--color-quantum-blue);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle.active::after {
+            transform: translateX(24px);
+        }
+
+        .color-picker {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .color-option {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
+        .color-option.active {
+            border-color: var(--color-neural-green);
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.3);
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .preset-item {
+            background: rgba(31, 41, 55, 0.8);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+
+        .preset-item:hover {
+            transform: translateY(-2px);
+            border-color: var(--color-quantum-blue);
+        }
+
+        .preset-item.active {
+            border-color: var(--color-neural-green);
+            background: rgba(5, 150, 105, 0.1);
+        }
+
+        .preset-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .preset-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .performance-chart {
+            height: 200px;
+            margin-top: 16px;
+            background: rgba(31, 41, 55, 0.4);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--color-quantum-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-neural-green);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(31, 41, 55, 0.8);
+            color: white;
+            border: 1px solid rgba(30, 58, 138, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(30, 58, 138, 0.2);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--color-quantum-blue);
+            border: 2px solid var(--color-quantum-blue);
+        }
+
+        .btn-outline:hover {
+            background: var(--color-quantum-blue);
+            color: white;
+        }
+
+        .preview-section {
+            margin-top: 32px;
+            background: rgba(31, 41, 55, 0.6);
+            border-radius: 16px;
+            border: 1px solid rgba(30, 58, 138, 0.2);
+            padding: 24px;
+        }
+
+        .preview-canvas {
+            width: 100%;
+            height: 300px;
+            background: var(--color-deep-space);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 24px;
+            background: var(--color-neural-green);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .advanced-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(30, 58, 138, 0.2);
+        }
+
+        .advanced-toggle {
+            background: none;
+            border: none;
+            color: var(--color-quantum-blue);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .advanced-content {
+            display: none;
+        }
+
+        .advanced-content.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .nav-links {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">Reactive Wallpaper Controls</div>
+            <nav class="nav-links">
+                <a href="index.html">Wallpaper</a>
+                <a href="controls.html" class="active">Controls</a>
+                <a href="themes.html">Themes</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="control-grid">
+            <div class="control-panel">
+                <div class="panel-title">
+                    <div class="panel-icon">🎯</div>
+                    Input Reactivity
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Mouse Sensitivity</span>
+                        <span class="control-value" id="mouseValue">75%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="mouseSensitivity" min="0" max="100" value="75">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Keyboard Response</span>
+                        <span class="control-value" id="keyboardValue">60%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="keyboardResponse" min="0" max="100" value="60">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Typing Rhythm</span>
+                        <span class="control-value" id="rhythmValue">80%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="typingRhythm" min="0" max="100" value="80">
+                    </div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Cursor Trail</span>
+                    <div class="toggle active" id="cursorTrail"></div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Click Ripples</span>
+                    <div class="toggle active" id="clickRipples"></div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="panel-title">
+                    <div class="panel-icon">⚙️</div>
+                    Performance Settings
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Particle Density</span>
+                        <span class="control-value" id="densityValue">100</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="particleDensity" min="10" max="200" value="100">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Animation Speed</span>
+                        <span class="control-value" id="speedValue">100%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="animationSpeed" min="10" max="200" value="100">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Visual Complexity</span>
+                        <span class="control-value" id="complexityValue">75%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="visualComplexity" min="0" max="100" value="75">
+                    </div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>High Quality Mode</span>
+                    <div class="toggle active" id="qualityMode"></div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Battery Saver</span>
+                    <div class="toggle" id="batterySaver"></div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="panel-title">
+                    <div class="panel-icon">🎨</div>
+                    Color & Style
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Color Scheme</span>
+                    </div>
+                    <div class="color-picker">
+                        <div class="color-option active" data-color="quantum" style="background: linear-gradient(45deg, var(--color-quantum-blue), var(--color-matrix-teal));"></div>
+                        <div class="color-option" data-color="neural" style="background: linear-gradient(45deg, var(--color-neural-green), var(--color-data-orange));"></div>
+                        <div class="color-option" data-color="plasma" style="background: linear-gradient(45deg, var(--color-plasma-purple), var(--color-signal-yellow));"></div>
+                        <div class="color-option" data-color="monochrome" style="background: linear-gradient(45deg, #ffffff, #6b7280);"></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Brightness</span>
+                        <span class="control-value" id="brightnessValue">85%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="brightness" min="0" max="100" value="85">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Contrast</span>
+                        <span class="control-value" id="contrastValue">70%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="contrast" min="0" max="100" value="70">
+                    </div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Dynamic Colors</span>
+                    <div class="toggle active" id="dynamicColors"></div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Glow Effects</span>
+                    <div class="toggle active" id="glowEffects"></div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="panel-title">
+                    <div class="panel-icon">📊</div>
+                    System Integration
+                </div>
+                
+                <div class="toggle-container">
+                    <span>CPU Monitoring</span>
+                    <div class="toggle active" id="cpuMonitoring"></div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Memory Usage</span>
+                    <div class="toggle active" id="memoryMonitoring"></div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Network Activity</span>
+                    <div class="toggle active" id="networkMonitoring"></div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Time-based Changes</span>
+                    <div class="toggle active" id="timeChanges"></div>
+                </div>
+
+                <div class="toggle-container">
+                    <span>Audio Visualization</span>
+                    <div class="toggle" id="audioVisualization"></div>
+                </div>
+
+                <div class="performance-chart" id="performanceChart"></div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">
+                <div class="panel-icon">💾</div>
+                Presets & Profiles
+            </div>
+            
+            <div class="preset-grid">
+                <div class="preset-item active" data-preset="balanced">
+                    <div class="preset-title">Balanced</div>
+                    <div class="preset-desc">Optimal performance and visuals</div>
+                </div>
+                <div class="preset-item" data-preset="performance">
+                    <div class="preset-title">Performance</div>
+                    <div class="preset-desc">Maximum FPS, minimal effects</div>
+                </div>
+                <div class="preset-item" data-preset="quality">
+                    <div class="preset-title">Quality</div>
+                    <div class="preset-desc">High visual fidelity</div>
+                </div>
+                <div class="preset-item" data-preset="minimal">
+                    <div class="preset-title">Minimal</div>
+                    <div class="preset-desc">Subtle, low-impact effects</div>
+                </div>
+                <div class="preset-item" data-preset="intense">
+                    <div class="preset-title">Intense</div>
+                    <div class="preset-desc">Maximum visual impact</div>
+                </div>
+                <div class="preset-item" data-preset="custom">
+                    <div class="preset-title">Custom</div>
+                    <div class="preset-desc">Your personalized settings</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="applySettings">
+                    <span>✓</span>
+                    Apply Settings
+                </button>
+                <button class="btn btn-secondary" id="savePreset">
+                    <span>💾</span>
+                    Save Preset
+                </button>
+                <button class="btn btn-outline" id="resetDefaults">
+                    <span>↻</span>
+                    Reset to Defaults
+                </button>
+            </div>
+
+            <div class="advanced-section">
+                <button class="advanced-toggle" id="advancedToggle">
+                    <span>⚙️</span>
+                    Advanced Settings
+                </button>
+                
+                <div class="advanced-content" id="advancedContent">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Frame Rate Limit</span>
+                            <span class="control-value" id="fpsValue">60 FPS</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="fpsLimit" min="30" max="120" value="60">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>Memory Limit</span>
+                            <span class="control-value" id="memoryValue">512 MB</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="memoryLimit" min="128" max="2048" value="512">
+                        </div>
+                    </div>
+
+                    <div class="toggle-container">
+                        <span>Hardware Acceleration</span>
+                        <div class="toggle active" id="hardwareAcceleration"></div>
+                    </div>
+
+                    <div class="toggle-container">
+                        <span>Debug Mode</span>
+                        <div class="toggle" id="debugMode"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <div class="panel-title">
+                <div class="panel-icon">👁️</div>
+                Live Preview
+            </div>
+            <div class="preview-canvas" id="previewCanvas">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: rgba(255,255,255,0.5);">
+                    <div style="font-size: 48px; margin-bottom: 8px;">🎨</div>
+                    <div>Preview will appear here</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="notification" id="notification">
+        Settings applied successfully
+    </div>
+
+    <script>
+        class ControlPanel {
+            constructor() {
+                this.settings = {
+                    mouseSensitivity: 75,
+                    keyboardResponse: 60,
+                    typingRhythm: 80,
+                    particleDensity: 100,
+                    animationSpeed: 100,
+                    visualComplexity: 75,
+                    brightness: 85,
+                    contrast: 70,
+                    fpsLimit: 60,
+                    memoryLimit: 512,
+                    cursorTrail: true,
+                    clickRipples: true,
+                    qualityMode: true,
+                    batterySaver: false,
+                    dynamicColors: true,
+                    glowEffects: true,
+                    cpuMonitoring: true,
+                    memoryMonitoring: true,
+                    networkMonitoring: true,
+                    timeChanges: true,
+                    audioVisualization: false,
+                    hardwareAcceleration: true,
+                    debugMode: false
+                };
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.initializePerformanceChart();
+                this.loadSettings();
+                this.startLivePreview();
+            }
+
+            setupEventListeners() {
+                // Sliders
+                const sliders = [
+                    { id: 'mouseSensitivity', key: 'mouseSensitivity', valueId: 'mouseValue', suffix: '%' },
+                    { id: 'keyboardResponse', key: 'keyboardResponse', valueId: 'keyboardValue', suffix: '%' },
+                    { id: 'typingRhythm', key: 'typingRhythm', valueId: 'rhythmValue', suffix: '%' },
+                    { id: 'particleDensity', key: 'particleDensity', valueId: 'densityValue', suffix: '' },
+                    { id: 'animationSpeed', key: 'animationSpeed', valueId: 'speedValue', suffix: '%' },
+                    { id: 'visualComplexity', key: 'visualComplexity', valueId: 'complexityValue', suffix: '%' },
+                    { id: 'brightness', key: 'brightness', valueId: 'brightnessValue', suffix: '%' },
+                    { id: 'contrast', key: 'contrast', valueId: 'contrastValue', suffix: '%' },
+                    { id: 'fpsLimit', key: 'fpsLimit', valueId: 'fpsValue', suffix: ' FPS' },
+                    { id: 'memoryLimit', key: 'memoryLimit', valueId: 'memoryValue', suffix: ' MB' }
+                ];
+
+                sliders.forEach(slider => {
+                    const element = document.getElementById(slider.id);
+                    const valueElement = document.getElementById(slider.valueId);
+                    
+                    element.addEventListener('input', (e) => {
+                        const value = parseInt(e.target.value);
+                        this.settings[slider.key] = value;
+                        valueElement.textContent = value + slider.suffix;
+                        this.updateLivePreview();
+                    });
+                });
+
+                // Toggles
+                const toggles = [
+                    'cursorTrail', 'clickRipples', 'qualityMode', 'batterySaver',
+                    'dynamicColors', 'glowEffects', 'cpuMonitoring', 'memoryMonitoring',
+                    'networkMonitoring', 'timeChanges', 'audioVisualization',
+                    'hardwareAcceleration', 'debugMode'
+                ];
+
+                toggles.forEach(toggle => {
+                    const element = document.getElementById(toggle);
+                    if (element) {
+                        element.addEventListener('click', (e) => {
+                            this.settings[toggle] = !this.settings[toggle];
+                            e.target.classList.toggle('active');
+                            this.updateLivePreview();
+                        });
+                    }
+                });
+
+                // Color picker
+                document.querySelectorAll('.color-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.updateLivePreview();
+                    });
+                });
+
+                // Presets
+                document.querySelectorAll('.preset-item').forEach(preset => {
+                    preset.addEventListener('click', (e) => {
+                        document.querySelectorAll('.preset-item').forEach(p => p.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.applyPreset(e.currentTarget.dataset.preset);
+                    });
+                });
+
+                // Action buttons
+                document.getElementById('applySettings').addEventListener('click', () => {
+                    this.applySettings();
+                });
+
+                document.getElementById('savePreset').addEventListener('click', () => {
+                    this.savePreset();
+                });
+
+                document.getElementById('resetDefaults').addEventListener('click', () => {
+                    this.resetDefaults();
+                });
+
+                // Advanced toggle
+                document.getElementById('advancedToggle').addEventListener('click', () => {
+                    const content = document.getElementById('advancedContent');
+                    content.classList.toggle('show');
+                });
+            }
+
+            initializePerformanceChart() {
+                const chartDom = document.getElementById('performanceChart');
+                const myChart = echarts.init(chartDom);
+                
+                const option = {
+                    backgroundColor: 'transparent',
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: ['CPU', 'Memory', 'Network', 'GPU'],
+                        axisLine: { lineStyle: { color: '#1e3a8a' } },
+                        axisLabel: { color: '#ffffff', fontSize: 10 }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        max: 100,
+                        axisLine: { lineStyle: { color: '#1e3a8a' } },
+                        axisLabel: { color: '#ffffff', fontSize: 10 },
+                        splitLine: { lineStyle: { color: 'rgba(30, 58, 138, 0.2)' } }
+                    },
+                    series: [{
+                        data: [45, 62, 78, 34],
+                        type: 'bar',
+                        itemStyle: {
+                            color: function(params) {
+                                const colors = ['#1e3a8a', '#059669', '#ea580c', '#7c3aed'];
+                                return colors[params.dataIndex];
+                            }
+                        },
+                        barWidth: '60%'
+                    }]
+                };
+                
+                myChart.setOption(option);
+                
+                // Update chart periodically
+                setInterval(() => {
+                    const newData = [
+                        Math.floor(Math.random() * 100),
+                        Math.floor(Math.random() * 100),
+                        Math.floor(Math.random() * 100),
+                        Math.floor(Math.random() * 100)
+                    ];
+                    myChart.setOption({
+                        series: [{ data: newData }]
+                    });
+                }, 3000);
+            }
+
+            loadSettings() {
+                // Load settings from localStorage or use defaults
+                const savedSettings = localStorage.getItem('reactiveWallpaperSettings');
+                if (savedSettings) {
+                    this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
+                }
+                this.updateUI();
+            }
+
+            updateUI() {
+                // Update all sliders and toggles to reflect current settings
+                Object.keys(this.settings).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        if (element.type === 'range') {
+                            element.value = this.settings[key];
+                            const valueElement = document.getElementById(key + 'Value') || 
+                                              document.getElementById(key.replace('Limit', 'Value'));
+                            if (valueElement) {
+                                const suffix = key.includes('Limit') ? (key.includes('fps') ? ' FPS' : ' MB') : 
+                                              (key.includes('Value') || key.includes('Sensitivity') || 
+                                               key.includes('Response') || key.includes('Rhythm') || 
+                                               key.includes('Complexity') || key.includes('Speed') || 
+                                               key.includes('brightness') || key.includes('contrast') ? '%' : '');
+                                valueElement.textContent = this.settings[key] + suffix;
+                            }
+                        } else if (element.classList.contains('toggle')) {
+                            if (this.settings[key]) {
+                                element.classList.add('active');
+                            } else {
+                                element.classList.remove('active');
+                            }
+                        }
+                    }
+                });
+            }
+
+            applyPreset(presetName) {
+                const presets = {
+                    balanced: {
+                        mouseSensitivity: 75,
+                        keyboardResponse: 60,
+                        particleDensity: 100,
+                        animationSpeed: 100,
+                        visualComplexity: 75,
+                        brightness: 85,
+                        contrast: 70
+                    },
+                    performance: {
+                        mouseSensitivity: 50,
+                        keyboardResponse: 40,
+                        particleDensity: 50,
+                        animationSpeed: 80,
+                        visualComplexity: 50,
+                        brightness: 75,
+                        contrast: 60,
+                        qualityMode: false,
+                        glowEffects: false
+                    },
+                    quality: {
+                        mouseSensitivity: 90,
+                        keyboardResponse: 80,
+                        particleDensity: 150,
+                        animationSpeed: 120,
+                        visualComplexity: 90,
+                        brightness: 95,
+                        contrast: 80,
+                        qualityMode: true,
+                        glowEffects: true
+                    },
+                    minimal: {
+                        mouseSensitivity: 30,
+                        keyboardResponse: 30,
+                        particleDensity: 30,
+                        animationSpeed: 60,
+                        visualComplexity: 30,
+                        brightness: 60,
+                        contrast: 50,
+                        cursorTrail: false,
+                        clickRipples: false,
+                        glowEffects: false
+                    },
+                    intense: {
+                        mouseSensitivity: 100,
+                        keyboardResponse: 100,
+                        particleDensity: 200,
+                        animationSpeed: 150,
+                        visualComplexity: 100,
+                        brightness: 100,
+                        contrast: 90
+                    }
+                };
+
+                const preset = presets[presetName];
+                if (preset) {
+                    this.settings = { ...this.settings, ...preset };
+                    this.updateUI();
+                    this.showNotification(`Applied ${presetName} preset`);
+                }
+            }
+
+            applySettings() {
+                localStorage.setItem('reactiveWallpaperSettings', JSON.stringify(this.settings));
+                this.showNotification('Settings applied successfully');
+                
+                // Send settings to main wallpaper (if on same domain)
+                if (window.parent !== window) {
+                    window.parent.postMessage('updateSettings', JSON.stringify(this.settings), '*');
+                }
+            }
+
+            savePreset() {
+                const name = prompt('Enter preset name:');
+                if (name) {
+                    const presets = JSON.parse(localStorage.getItem('customPresets') || '{}');
+                    presets[name] = this.settings;
+                    localStorage.setItem('customPresets', JSON.stringify(presets));
+                    this.showNotification(`Preset "${name}" saved`);
+                }
+            }
+
+            resetDefaults() {
+                this.settings = {
+                    mouseSensitivity: 75,
+                    keyboardResponse: 60,
+                    typingRhythm: 80,
+                    particleDensity: 100,
+                    animationSpeed: 100,
+                    visualComplexity: 75,
+                    brightness: 85,
+                    contrast: 70,
+                    fpsLimit: 60,
+                    memoryLimit: 512,
+                    cursorTrail: true,
+                    clickRipples: true,
+                    qualityMode: true,
+                    batterySaver: false,
+                    dynamicColors: true,
+                    glowEffects: true,
+                    cpuMonitoring: true,
+                    memoryMonitoring: true,
+                    networkMonitoring: true,
+                    timeChanges: true,
+                    audioVisualization: false,
+                    hardwareAcceleration: true,
+                    debugMode: false
+                };
+                this.updateUI();
+                this.showNotification('Reset to default settings');
+            }
+
+            startLivePreview() {
+                // Simulate live preview updates
+                setInterval(() => {
+                    this.updateLivePreview();
+                }, 100);
+            }
+
+            updateLivePreview() {
+                // Create a simple visual representation of current settings
+                const canvas = document.getElementById('previewCanvas');
+                const rect = canvas.getBoundingClientRect();
+                
+                // Add some animated elements based on current settings
+                const intensity = this.settings.visualComplexity / 100;
+                const speed = this.settings.animationSpeed / 100;
+                
+                // This would be more sophisticated in a real implementation
+                canvas.style.filter = `brightness(${this.settings.brightness}%) contrast(${this.settings.contrast}%)`;
+            }
+
+            showNotification(message) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new ControlPanel();
+        });
+    </script>
+</body>
+</html>
